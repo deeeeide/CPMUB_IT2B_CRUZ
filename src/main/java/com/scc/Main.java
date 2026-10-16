@@ -1,6 +1,8 @@
 package com.scc;
 
 import com.scc.dao.UserDao;
+import com.scc.model.User;
+import com.scc.ui.AdminMenu;
 
 import java.util.Scanner;
 
@@ -21,6 +23,8 @@ public class Main {
         switch (choice){
 
             case "1":
+                handleLogin();
+
                 break;
             case "2":
                 System.out.print("Enter new username: ");
@@ -52,5 +56,24 @@ public class Main {
                     }
                 break;
         }
+    }
+
+    private static void handleLogin(){
+        System.out.print("Enter username: ");
+        String username = sc.nextLine();
+        System.out.print("Enter password: ");
+        String password = sc.nextLine();
+
+        User user = userDao.login(username, password);
+
+        if(user != null){
+            System.out.println("\n -. WELCOME "+user.username()+"| ROLE: "+user.roles()+"");
+            switch (user.roles()){
+                case "ADMIN" -> new AdminMenu(userDao, sc).display(user);
+                default -> System.out.println("Account roles not found!");
+            }
+
+        }
+
     }
 }
