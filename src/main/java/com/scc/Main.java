@@ -55,6 +55,9 @@ public class Main {
 
                     }
                 break;
+            case "3":
+                System.out.println("\nExiting application. Goodbye!");
+                return;
         }
     }
 
