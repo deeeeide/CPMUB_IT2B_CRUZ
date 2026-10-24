@@ -2,6 +2,7 @@ package com.scc.dao;
 
 import com.scc.model.User;
 
+import javax.xml.crypto.Data;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -115,9 +116,53 @@ public class UserDao {
             }
             return usersList;
 
-
-
         }
 
+    public List<User> getPendingUser(){
+        List<User> pendingList = new ArrayList<>();
+        String sql = "SELECT * FROM users WHERE status = 'PENDING'";
+
+            try(Connection conn = DatabaseConnection.getConnection()){
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(sql);
+
+                while(rs.next()){
+                    pendingList.add(new User(
+                            rs.getInt("id"),
+                            rs.getString("username"),
+                            rs.getString("password"),
+                            rs.getString("roles"),
+                            rs.getString("status")
+                    ));
+                }
+
+            }catch (SQLException e){
+                System.err.println("Error fetching users: "+e.getMessage());
+            }
+            return pendingList;
+
+    }
+
+    public boolean approvedUser(int userId){
+        String sql = "UPDATE users SET status = 'APPROVED' WHERE id = ?";
+
+        try(Connection conn = DatabaseConnection.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, userId);
+            int rowsUpdated = pstmt.executeUpdate();
+
+            if(rowsUpdated > 0){
+                System.out.println(" -> User ID: "+userId+" approved successfully!");
+                return true;
+            }else{
+                System.out.println(" -> ID not found.");
+            }
+        }catch (Exception e){
+            System.err.println("Error approving users: "+e.getMessage());
+
+    } return false;
+
+    }
 
     }
