@@ -56,42 +56,36 @@ public class Authentication {
 
 
             switch (user.roles().toUpperCase()){
+                case "MANAGER" -> new ManagerMenu(userDao, logDao, scanner).display(user);
                 case "ADMIN" -> new AdminMenu(userDao, logDao, scanner).display(user);
                 default -> System.out.println("Account roles not found!");
             }
-
+        }else{
+            System.out.println(" -> [ERROR] Invalid username or password. ");
         }
 
     }
 
-    private void handleRegistration(){
+    private void handleRegistration() {
         System.out.print("Enter new username: ");
-        String user = scanner.nextLine();
+        String user = scanner.nextLine().trim();
         System.out.print("Enter password: ");
-        String pass = scanner.nextLine();
+        String pass = scanner.nextLine().trim();
 
-        System.out.print("Select Role [1] Admin | [2] Property Manager: ");
-        int roleChoice = scanner.nextInt();
-        String role;
+        System.out.print("Select Role [1] Admin | [2] Property Manager | [3] Billing Staff: ");
+        String roleChoice = scanner.nextLine().trim();
+        String role = switch (roleChoice) {
+            case "1" -> "ADMIN";
+            case "2" -> "MANAGER";
+            case "3" -> "STAFF";
+            default -> null;
+        };
 
-        switch(roleChoice){
-            case 1:
-                role = "Admin";
-                break;
-            case 2:
-                role = "Property Manager";
-                break;
-            default:
-                role = null;
-        }
-        if(role != null){
+        if (role != null) {
             userDao.registerUser(user, pass, role);
-
-        }else{
-
-            System.out.println("Invalid role selection!");
-
+            System.out.println(" -> Registration submitted successfully! Pending approval.");
+        } else {
+            System.out.println(" -> [ERROR] Invalid role selection!");
         }
-
     }
 }
