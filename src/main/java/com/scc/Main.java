@@ -1,5 +1,6 @@
 package com.scc;
 
+import com.scc.dao.ActivityLogDao;
 import com.scc.dao.Databaseinitializer;
 import com.scc.dao.UserDao;
 import com.scc.ui.Authentication;
@@ -11,9 +12,10 @@ public class Main {
 
         Databaseinitializer.initialize();
 
-        Scanner scanner = new Scanner(System.in);
         UserDao userDao = new UserDao();
-        Authentication auth = new Authentication(userDao, scanner);
+        ActivityLogDao logDao = new ActivityLogDao();
+        Scanner scanner = new Scanner(System.in);
+        Authentication auth = new Authentication(userDao, logDao, scanner);
         auth.start();
         scanner.close();
 

@@ -1,5 +1,6 @@
 package com.scc.ui;
 
+import com.scc.dao.ActivityLogDao;
 import com.scc.dao.UserDao;
 import com.scc.model.User;
 
@@ -9,10 +10,12 @@ import java.util.Scanner;
 
 public class AdminMenu {
     private final UserDao userDao;
+    private final ActivityLogDao logDao;
     private final Scanner scanner;
 
-    public AdminMenu(UserDao userDao, Scanner scanner){
+    public AdminMenu(UserDao userDao,ActivityLogDao logDao ,Scanner scanner){
         this.userDao = userDao;
+        this.logDao = logDao;
         this.scanner = scanner;
     }
 
@@ -39,6 +42,11 @@ public class AdminMenu {
                 case "2" -> viewPendingUsers();
                 case "3" -> approvedUser();
                 case "5" -> updateUser(admin);
+                case "7" -> {
+                    logDao.logActivity(admin.id(), admin.username(),"USER_LOGOUT");
+                    loggedIn = false;
+                    System.out.println("-> Logging out from Admin Dashboard... ");
+                }
                 default -> System.out.println(" -> [ERROR] invalid Option.");
             }
 

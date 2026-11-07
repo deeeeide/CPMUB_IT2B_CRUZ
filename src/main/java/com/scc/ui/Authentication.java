@@ -1,20 +1,26 @@
 package com.scc.ui;
 
+import com.scc.dao.ActivityLogDao;
 import com.scc.dao.UserDao;
 import com.scc.model.User;
+
+import java.util.Locale;
 import java.util.Scanner;
 
 public class Authentication {
 
     private final UserDao userDao;
-    private final Scanner sc;
+    private final ActivityLogDao logDao;
+    private final Scanner scanner;
 
-    public Authentication(UserDao userDao, Scanner sc){
+    public Authentication(UserDao userDao, ActivityLogDao logDao, Scanner scanner){
         this.userDao = userDao;
-        this.sc = sc;
+        this.logDao = logDao;
+        this.scanner = scanner;
     }
 
     public void start(){
+        boolean running = true;
 
         System.out.println("\n=======================================");
         System.out.print("PROPERTY MANAGEMENT AND UTILITY BILLING ");
@@ -23,63 +29,67 @@ public class Authentication {
         System.out.println("2. Register");
         System.out.println("3. Exit");
         System.out.print("Choose an option: ");
-        String choice = sc.nextLine();
+        String choice = scanner.nextLine().trim();
 
         switch (choice){
-
-            case "1":
-                handleLogin();
-
-                break;
-            case "2":
-                System.out.print("Enter new username: ");
-                String user = sc.nextLine();
-                System.out.print("Enter password: ");
-                String pass = sc.nextLine();
-
-                System.out.print("Select Role [1] Admin | [2] Property Manager: ");
-                int roleChoice = sc.nextInt();
-                String role;
-
-                switch(roleChoice){
-                    case 1:
-                        role = "Admin";
-                        break;
-                    case 2:
-                        role = "Property Manager";
-                        break;
-                    default:
-                        role = null;
-                }
-                if(role != null){
-                    userDao.registerUser(user, pass, role);
-
-                }else{
-
-                    System.out.println("Invalid role selection!");
-
-                }
-                break;
-            case "3":
+            case "1" -> handleLogin();
+            case "2" -> handleRegistration();
+            case "3" -> {
+                running = false;
                 System.out.println("\nExiting application. Goodbye!");
-                return;
+            }
+            default -> System.out.println(" -> [ERROR] Invalid option.");
         }
 
     }
     private void handleLogin(){
         System.out.print("Enter username: ");
-        String username = sc.nextLine();
+        String username = scanner.nextLine();
         System.out.print("Enter password: ");
-        String password = sc.nextLine();
+        String password = scanner.nextLine();
 
         User user = userDao.login(username, password);
 
         if(user != null){
+            logDao.logActivity(user.id(), username, "USER_LOGIN" );
             System.out.println("\n -. WELCOME "+user.username()+ "| ROLE: "+user.roles()+"");
-            switch (user.roles()){
-                case "ADMIN" -> new AdminMenu(userDao, sc).display(user);
+
+
+            switch (user.roles().toUpperCase()){
+                case "ADMIN" -> new AdminMenu(userDao, logDao, scanner).display(user);
                 default -> System.out.println("Account roles not found!");
             }
+
+        }
+
+    }
+
+    private void handleRegistration(){
+        System.out.print("Enter new username: ");
+        String user = scanner.nextLine();
+        System.out.print("Enter password: ");
+        String pass = scanner.nextLine();
+
+        System.out.print("Select Role [1] Admin | [2] Property Manager: ");
+        int roleChoice = scanner.nextInt();
+        String role;
+
+        switch(roleChoice){
+            case 1:
+                role = "Admin";
+                break;
+            case 2:
+                role = "Property Manager";
+                break;
+            default:
+                role = null;
+        }
+        if(role != null){
+            userDao.registerUser(user, pass, role);
+
+        }else{
+
+            System.out.println("Invalid role selection!");
 
         }
 
