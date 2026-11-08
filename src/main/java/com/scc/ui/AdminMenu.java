@@ -172,7 +172,7 @@ public class AdminMenu {
         }
 
         userDao.updateUserAndStatus(userId, newRole, newStatus);
-        String logDesc = "Admin "+currentAdmin.id()+" changed role of User #"+userId+" to "+newRole;
+        String logDesc = "Admin #"+currentAdmin.id()+" changed role of User #"+userId+" to "+newRole;
         logDao.logActivity(currentAdmin.id(), currentAdmin.username(), logDesc);
     }
 
