@@ -27,15 +27,26 @@ public class Databaseinitializer {
             );
             """;
 
-        String createProperties = """
-            CREATE TABLE IF NOT EXISTS properties (
-                propertyID INTEGER PRIMARY KEY AUTOINCREMENT,
-                propertyName TEXT NOT NULL,
-                location TEXT NOT NULL,
-                unitnumber INTEGER NOT NULL,
-                unitSize REAL NOT NULL,
-                availability TEXT NOT NULL DEFAULT 'AVAILABLE'
+        String createTenants = """
+            CREATE TABLE IF NOT EXISTS tenants (
+                tenantID INTEGER PRIMARY KEY AUTOINCREMENT,
+                tenantName TEXT NOT NULL,
+                contactNum TEXT NOT NULL,
+                email TEXT NOT NULL,
+                businessName TEXT NOT NULL
             );
+            """;
+
+        String createProperties = """
+                CREATE TABLE IF NOT EXISTS properties (
+                  propertyID INTEGER PRIMARY KEY AUTOINCREMENT,
+                  propertyName TEXT NOT NULL,
+                  location TEXT NOT NULL,
+                  unitnumber INTEGER NOT NULL,
+                  unitSize REAL NOT NULL,
+                  availability TEXT NOT NULL DEFAULT 'AVAILABLE',
+                  UNIQUE (propertyName, unitnumber)
+              );
             """;
 
         String createLeases = """
@@ -48,8 +59,48 @@ public class Databaseinitializer {
                 endDate TEXT NOT NULL,
                 rentalRate REAL NOT NULL,
                 leaseStatus TEXT NOT NULL DEFAULT 'ACTIVE',
+                FOREIGN KEY (tenantID) REFERENCES tenants(tenantID) ON DELETE CASCADE,
                 FOREIGN KEY (propertyID) REFERENCES properties(propertyID) ON DELETE CASCADE,
                 FOREIGN KEY (userID) REFERENCES users(id) ON DELETE CASCADE
+            );
+            """;
+
+        String createBilling = """
+            CREATE TABLE IF NOT EXISTS billing (
+                readingID INTEGER PRIMARY KEY AUTOINCREMENT,
+                leaseID INTEGER NOT NULL,
+                previousElectricReading REAL NOT NULL DEFAULT 0.0,
+                currentElectricReading REAL NOT NULL,
+                previousWaterReading REAL NOT NULL DEFAULT 0.0,
+                currentWaterReading REAL NOT NULL,
+                FOREIGN KEY (leaseID) REFERENCES leases(leaseID) ON DELETE CASCADE
+            );
+            """;
+
+        String createBills = """
+            CREATE TABLE IF NOT EXISTS bills (
+                billID INTEGER PRIMARY KEY AUTOINCREMENT,
+                leaseID INTEGER NOT NULL,
+                readingID INTEGER,
+                monthlyRent REAL NOT NULL,
+                utilityCharge REAL NOT NULL,
+                latePenalty REAL NOT NULL DEFAULT 0.0,
+                totalBill REAL NOT NULL,    
+                dueDate TEXT NOT NULL,
+                paymentStatus TEXT NOT NULL DEFAULT 'UNPAID',
+                FOREIGN KEY (leaseID) REFERENCES leases(leaseID) ON DELETE CASCADE
+                FOREIGN KEY (readingID) REFERENCES billing(readingID) ON DELETE SET NULL
+            );
+            """;
+
+        String createPayments = """
+            CREATE TABLE IF NOT EXISTS payments (
+                paymentID INTEGER PRIMARY KEY AUTOINCREMENT,
+                billID INTEGER NOT NULL,
+                paymentAmount REAL NOT NULL,
+                paymentDate TEXT NOT NULL,
+                balance REAL NOT NULL,
+                FOREIGN KEY (billID) REFERENCES bills(billID) ON DELETE CASCADE
             );
             """;
 
@@ -58,11 +109,15 @@ public class Databaseinitializer {
 
             stmt.execute(createUsers);
             stmt.execute(createActivityLogs);
+            stmt.execute(createTenants);
             stmt.execute(createProperties);
             stmt.execute(createLeases);
+            stmt.execute(createBilling);
+            stmt.execute(createBills);
+            stmt.execute(createPayments);
 
             new UserDao();
-            System.out.println(" -> Database tables verified.");
+            System.out.println(" -> Database tables verified successfully.");
 
         } catch (Exception e) {
             System.err.println("ERROR initializing database tables: " + e.getMessage());

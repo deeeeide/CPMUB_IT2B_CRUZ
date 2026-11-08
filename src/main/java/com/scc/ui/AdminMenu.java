@@ -46,7 +46,7 @@ public class AdminMenu {
                 case "6" -> deleteUser(admin);
                 case "7" -> displayAuditLogMenu();
                 case "8" -> {
-                    logDao.logActivity(admin.id(), admin.username(), "User " + admin.username() + " (ID: " + admin.id() + ") logged out.");
+                    logDao.logActivity(admin.id(), admin.username(), "USER_LOGOUT");
                     loggedIn = false;
                     System.out.println("-> Logging out from Admin Dashboard... ");
                 }
@@ -103,9 +103,8 @@ public class AdminMenu {
         }
 
         userDao.approvedUser(userId);
-        String logDesc = "Admin " + admin.id() + " approved account for User ID " + userId;
+        String logDesc = "Admin "+admin.id()+" approved account for User ID#"+userId;
         logDao.logActivity(admin.id(), admin.username(), logDesc);
-        System.out.println(" -> User ID #" + userId + " approved successfully.");
     }
 
     private void addUserManual(User admin) {
@@ -137,7 +136,7 @@ public class AdminMenu {
         }
 
         userDao.createUserDirectly(username, password, role);
-        String logDesc = "Admin " + admin.id() + " created user account for " + username + " (" + role + ")";
+        String logDesc = "Admin #"+admin.id()+" created user account for "+username+" ("+role+")";
         logDao.logActivity(admin.id(), admin.username(), logDesc);
     }
 
@@ -173,9 +172,8 @@ public class AdminMenu {
         }
 
         userDao.updateUserAndStatus(userId, newRole, newStatus);
-        String logDesc = "Admin " + currentAdmin.id() + " changed role of User " + userId + " to " + newRole;
+        String logDesc = "Admin "+currentAdmin.id()+" changed role of User #"+userId+" to "+newRole;
         logDao.logActivity(currentAdmin.id(), currentAdmin.username(), logDesc);
-        System.out.println(" -> User ID #" + userId + " updated successfully.");
     }
 
     private void deleteUser(User currentAdmin) {
@@ -203,14 +201,14 @@ public class AdminMenu {
             return;
         }
 
-        System.out.print("Are you sure you want to delete User ID #" + userId + "? (YES/NO): ");
+        System.out.print("Are you sure you want to delete User ID #"+userId+"? (YES/NO): ");
         String confirm = scanner.nextLine().trim();
 
         if (confirm.equalsIgnoreCase("YES") || confirm.equalsIgnoreCase("Y")) {
             userDao.deleteUser(userId);
-            String logDesc = "Admin " + currentAdmin.id() + " deleted User ID " + userId;
+            String logDesc = "Admin #"+currentAdmin.id()+" deleted User ID #"+userId;
             logDao.logActivity(currentAdmin.id(), currentAdmin.username(), logDesc);
-            System.out.println(" -> User ID #" + userId + " successfully deleted.");
+            System.out.println(" -> User ID #" +userId+ " successfully deleted.");
         } else {
             System.out.println(" -> Deletion Cancelled.");
         }
@@ -228,7 +226,6 @@ public class AdminMenu {
             switch (choice) {
                 case "1" -> renderLogTable(logDao.getAllLogs());
                 case "2" -> {
-                    // Added viewing section so admin can see user IDs first
                     displayUserTable(userDao.getAllUser(), "REGISTERED USERS REFERENCE");
                     int userId = readIntInput("Enter User ID to filter: ");
                     renderLogTable(logDao.getLogsByUserId(userId));
@@ -243,20 +240,19 @@ public class AdminMenu {
             System.out.println(" -> No activity log records found.");
             return;
         }
-
-        System.out.println("\n" + "-".repeat(130));
-        System.out.printf("| %-5s | %-8s | %-15s | %-70s | %-20s |%n", "ID", "User ID", "Username", "Action", "Timestamp");
-        System.out.println("-".repeat(130));
+        System.out.println("\n" + "-".repeat(160));
+        System.out.printf("| %-5s | %-8s | %-15s | %-95s | %-20s |%n", "ID", "User ID", "Username", "Action", "Timestamp");
+        System.out.println("-".repeat(160));
 
         for (ActivityLog log : logs) {
-            System.out.printf("| %-5d | %-8d | %-15s | %-70s | %-20s |%n",
+            System.out.printf("| %-5d | %-8d | %-15s | %-95s | %-20s |%n",
                     log.id(),
                     log.userId(),
                     log.username(),
                     log.action(),
                     log.timestamp());
         }
-        System.out.println("-".repeat(130));
+        System.out.println("-".repeat(160));
     }
 
     private String readValidRole() {

@@ -52,12 +52,13 @@ public class Authentication {
 
         if(user != null){
             logDao.logActivity(user.id(), username, "USER_LOGIN" );
-            System.out.println("\n -. WELCOME "+user.username()+ "| ROLE: "+user.roles()+"");
+            System.out.println("\n -. WELCOME "+user.username()+ " | ROLE: "+user.roles()+"");
 
 
             switch (user.roles().toUpperCase()){
-                case "MANAGER" -> new ManagerMenu(userDao, logDao, scanner).display(user);
                 case "ADMIN" -> new AdminMenu(userDao, logDao, scanner).display(user);
+                case "MANAGER" -> new ManagerMenu(userDao, logDao, scanner).display(user);
+                case "STAFF" -> new StaffMenu(userDao, logDao, scanner).display(user);
                 default -> System.out.println("Account roles not found!");
             }
         }else{
@@ -65,7 +66,6 @@ public class Authentication {
         }
 
     }
-
     private void handleRegistration() {
         System.out.print("Enter new username: ");
         String user = scanner.nextLine().trim();
