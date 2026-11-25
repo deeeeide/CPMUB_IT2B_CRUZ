@@ -18,7 +18,7 @@ public class StaffMenu {
         this.scanner = scanner;
     }
 
-    public void display(User staff){
+    public void display(User staff) {
         boolean loggedIn = true;
         while (loggedIn) {
             System.out.println("\n==============================================");
@@ -37,40 +37,41 @@ public class StaffMenu {
 
             String choice = scanner.nextLine().trim();
 
-            switch (choice) {
-                case "1" -> recordUtilityReading(staff);
-                case "2" -> recordPayment(staff);
-                case "3" -> applyLatePenaltyManual(staff);
-                case "4" -> updatePaymentStatusManual(staff);
-                case "5" -> viewMeterReadingTable();
-                case "6" -> viewBillsTable();
-                case "7" -> viewLeaseTable();
-                case "8" -> viewReceipts();
-                case "9" -> {
-
-                    logDao.logActivity(staff.id(), staff.username(), "USER_LOGOUT");
-                    loggedIn = false;
-                    System.out.println(" -> Logging out from Billing Staff Dashboard...");
+            try {
+                switch (choice) {
+                    case "1" -> recordUtilityReading(staff);
+                    case "2" -> recordPayment(staff);
+                    case "3" -> applyLatePenaltyManual(staff);
+                    case "4" -> updatePaymentStatusManual(staff);
+                    case "5" -> viewMeterReadingTable();
+                    case "6" -> viewBillsTable();
+                    case "7" -> viewLeaseTable();
+                    case "8" -> viewReceipts();
+                    case "9" -> {
+                        logDao.logActivity(staff.id(), staff.username(), "USER_LOGOUT");
+                        loggedIn = false;
+                        System.out.println(" -> Logging out from Billing Staff Dashboard...");
+                    }
+                    default -> System.out.println(" -> [ERROR] Invalid Option.");
                 }
-                default -> System.out.println(" -> [ERROR] Invalid Option.");
+            } catch (OperationCancelledException e) {
+                System.out.println(" -> Operation cancelled. Returning to Billing Staff Dashboard...");
             }
         }
     }
 
     private void recordUtilityReading(User staff) {
-        System.out.println("\n----- RECORD UTILITY READINGS & GENERATE BILL -----");
+        System.out.println("\n----- RECORD UTILITY READINGS & GENERATE BILL (Type 'cancel' anytime to go back) -----");
         userDao.displayLeasesTable();
         int leaseId = readIntInput("Enter Lease ID (or 0 to cancel): ");
-        if (leaseId == 0) return;
 
-        double prevElec = readDoubleInput("Enter Previous Electricity Reading (kWh): ");
-        double currElec = readDoubleInput("Enter Current Electricity Reading (kWh): ");
+        double prevElec = readDoubleInputAllowZero("Enter Previous Electricity Reading (kWh): ");
+        double currElec = readDoubleInputAllowZero("Enter Current Electricity Reading (kWh): ");
         boolean isElecRollover = false;
 
         if (currElec < prevElec) {
             System.out.println(" -> [NOTICE] Current electricity reading is lower than previous reading.");
-            System.out.print("Is this a meter rollover (e.g. 9999 -> 0000)? (Y/N): ");
-            String ans = scanner.nextLine().trim();
+            String ans = readStringInput("Is this a meter rollover (e.g. 9999 -> 0000)? (Y/N): ");
             if (ans.equalsIgnoreCase("Y")) {
                 isElecRollover = true;
             } else {
@@ -79,14 +80,13 @@ public class StaffMenu {
             }
         }
 
-        double prevWater = readDoubleInput("Enter Previous Water Reading (m3): ");
-        double currWater = readDoubleInput("Enter Current Water Reading (m3): ");
+        double prevWater = readDoubleInputAllowZero("Enter Previous Water Reading (m3): ");
+        double currWater = readDoubleInputAllowZero("Enter Current Water Reading (m3): ");
         boolean isWaterRollover = false;
 
         if (currWater < prevWater) {
             System.out.println(" -> [NOTICE] Current water reading is lower than previous reading.");
-            System.out.print("Is this a meter rollover (e.g. 9999 -> 0000)? (Y/N): ");
-            String ans = scanner.nextLine().trim();
+            String ans = readStringInput("Is this a meter rollover (e.g. 9999 -> 0000)? (Y/N): ");
             if (ans.equalsIgnoreCase("Y")) {
                 isWaterRollover = true;
             } else {
@@ -95,17 +95,15 @@ public class StaffMenu {
             }
         }
 
-        System.out.print("Enter Payment Due Date (YYYY-MM-DD): ");
-        String dueDate = scanner.nextLine().trim();
+        String dueDate = readStringInput("Enter Payment Due Date (YYYY-MM-DD): ");
 
         userDao.recordUtilityReading(staff.id(), staff.username(), leaseId, prevElec, currElec, prevWater, currWater, dueDate, isElecRollover, isWaterRollover);
     }
 
     private void recordPayment(User staff) {
-        System.out.println("\n----- RECORD TENANT PAYMENT -----");
+        System.out.println("\n----- RECORD TENANT PAYMENT (Type 0 or 'cancel' anytime to go back) -----");
         userDao.displayBillsTable();
         int billId = readIntInput("Enter Bill ID (or 0 to cancel): ");
-        if (billId == 0) return;
 
         double amount = readDoubleInput("Enter Payment Amount (PHP): ");
         String paymentDate = LocalDate.now().toString();
@@ -114,55 +112,63 @@ public class StaffMenu {
     }
 
     private void applyLatePenaltyManual(User staff) {
-        System.out.println("\n----- APPLY LATE PENALTY TO UNPAID BILL -----");
+        System.out.println("\n----- APPLY LATE PENALTY TO UNPAID BILL (Type 0 or 'cancel' anytime to go back) -----");
         userDao.displayBillsTable();
         int billId = readIntInput("Enter Bill ID (or 0 to cancel): ");
-        if (billId == 0) return;
 
         double penaltyAmount = readDoubleInput("Enter Late Penalty Charge (PHP): ");
         userDao.applyLatePenalty(staff.id(), staff.username(), billId, penaltyAmount);
     }
+
     private void updatePaymentStatusManual(User staff) {
-        System.out.println("\n----- UPDATE PAYMENT STATUS -----");
+        System.out.println("\n----- UPDATE PAYMENT STATUS (Type 0 or 'cancel' anytime to go back) -----");
         userDao.displayBillsTable();
         int billId = readIntInput("Enter Bill ID to update (or 0 to cancel): ");
-        if (billId == 0) return;
 
-        System.out.print("Enter New Payment Status (PAID / PARTIALLY PAID / UNPAID): ");
-        String newStatus = scanner.nextLine().trim();
+        String newStatus = readStringInput("Enter New Payment Status (PAID / PARTIALLY PAID / UNPAID): ");
 
         userDao.updatePaymentStatus(staff.id(), staff.username(), billId, newStatus);
     }
 
-    private void viewMeterReadingTable(){
+    private void viewMeterReadingTable() {
         userDao.displayBillingReadingsTable();
     }
-    private void viewBillsTable(){
+
+    private void viewBillsTable() {
         userDao.displayBillsTable();
     }
 
-    private void viewLeaseTable(){
+    private void viewLeaseTable() {
         userDao.displayLeasesTable();
     }
+
     private void viewReceipts() {
         userDao.displayLeasesTable();
 
-        System.out.print("\nEnter Lease ID to print receipt bill (or 0 to cancel): ");
-        int leaseId = Integer.parseInt(scanner.nextLine());
-        if (leaseId > 0) {
+        int leaseId = readIntInput("\nEnter Lease ID to print receipt bill (or 0 to cancel): ");
         userDao.printReceiptByLeaseId(leaseId);
-        }
     }
 
+    private String readStringInput(String prompt) {
+        System.out.print(prompt);
+        String input = scanner.nextLine().trim();
+        if (input.equals("0") || input.equalsIgnoreCase("CANCEL")) {
+            throw new OperationCancelledException();
+        }
+        return input;
+    }
 
     private int readIntInput(String prompt) {
         while (true) {
             System.out.print(prompt);
             String input = scanner.nextLine().trim();
+            if (input.equals("0") || input.equalsIgnoreCase("CANCEL")) {
+                throw new OperationCancelledException();
+            }
             try {
                 return Integer.parseInt(input);
             } catch (NumberFormatException e) {
-                System.out.println(" -> [ERROR] Please enter a valid integer.");
+                System.out.println(" -> [ERROR] Please enter a valid integer (or 0 to cancel).");
             }
         }
     }
@@ -171,10 +177,28 @@ public class StaffMenu {
         while (true) {
             System.out.print(prompt);
             String input = scanner.nextLine().trim();
+            if (input.equals("0") || input.equalsIgnoreCase("CANCEL")) {
+                throw new OperationCancelledException();
+            }
             try {
                 return Double.parseDouble(input);
             } catch (NumberFormatException e) {
-                System.out.println(" -> [ERROR] Please enter a valid decimal number.");
+                System.out.println(" -> [ERROR] Please enter a valid decimal number (or 0 to cancel).");
+            }
+        }
+    }
+
+    private double readDoubleInputAllowZero(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String input = scanner.nextLine().trim();
+            if (input.equalsIgnoreCase("CANCEL")) {
+                throw new OperationCancelledException();
+            }
+            try {
+                return Double.parseDouble(input);
+            } catch (NumberFormatException e) {
+                System.out.println(" -> [ERROR] Please enter a valid decimal number (or 'cancel' to go back).");
             }
         }
     }

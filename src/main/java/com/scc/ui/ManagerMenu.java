@@ -4,7 +4,6 @@ import com.scc.dao.ActivityLogDao;
 import com.scc.dao.UserDao;
 import com.scc.model.User;
 
-import java.util.Locale;
 import java.util.Scanner;
 
 public class ManagerMenu {
@@ -37,58 +36,47 @@ public class ManagerMenu {
 
             String choice = scanner.nextLine().trim();
 
-            switch (choice) {
-                case "1" -> addPropertyManual(manager);
-                case "2" -> addTenantManual(manager);
-                case "3" -> createLeaseManual(manager);
-                case "4" -> viewProperties();
-                case "5" -> viewTenant();
-                case "6" -> viewLeaseTable();
-                case "7" -> deactivateLeaseManual(manager);
-                case "8" -> {
-                    logDao.logActivity(manager.id(), manager.username(), "USER_LOGOUT");
-                    loggedIn = false;
-                    System.out.println(" -> Logging out from Manager Dashboard...");
+            try {
+                switch (choice) {
+                    case "1" -> addPropertyManual(manager);
+                    case "2" -> addTenantManual(manager);
+                    case "3" -> createLeaseManual(manager);
+                    case "4" -> viewProperties();
+                    case "5" -> viewTenant();
+                    case "6" -> viewLeaseTable();
+                    case "7" -> deactivateLeaseManual(manager);
+                    case "8" -> {
+                        logDao.logActivity(manager.id(), manager.username(), "USER_LOGOUT");
+                        loggedIn = false;
+                        System.out.println(" -> Logging out from Manager Dashboard...");
+                    }
+                    default -> System.out.println(" -> [ERROR] Invalid Option.");
                 }
-                default -> System.out.println(" -> [ERROR] Invalid Option.");
+            } catch (OperationCancelledException e) {
+                System.out.println(" -> Operation cancelled. Returning to Manager Dashboard...");
             }
         }
     }
 
     private void addPropertyManual(User manager) {
-        System.out.println("\n----- ADD NEW COMMERCIAL PROPERTY / UNIT -----");
+        System.out.println("\n----- ADD NEW COMMERCIAL PROPERTY / UNIT (Type 0 or 'cancel' anytime to go back) -----");
         userDao.displayPropertyTable();
-        System.out.print("Enter Property Name (or 0 to cancel): ");
-        String propName = scanner.nextLine().trim();
-        if (propName.equals("0") || propName.equalsIgnoreCase("CANCEL")) {
-            System.out.println(" -> Operation cancelled.");
-            return;
-        }
-
-        System.out.print("Enter Property Location: ");
-        String location = scanner.nextLine().trim();
-
+        String propName = readStringInput("Enter Property Name: ");
+        String location = readStringInput("Enter Property Location: ");
         int unitNum = readIntInput("Enter Unit Number: ");
         double unitSize = readDoubleInput("Enter Unit Size (sqm): ");
-
-        System.out.print("Enter Availability (Available or Not): ");
-        String availability = scanner.nextLine().toUpperCase().trim();
+        String availability = readStringInput("Enter Availability (Available or Not): ").toUpperCase();
 
         userDao.addProperty(manager.id(), manager.username(), propName, unitNum, location, unitSize, availability);
     }
-    private void addTenantManual(User manager) {
-        System.out.println("\n----- ADD NEW TENANT RECORD -----");
-        userDao.displayTenantTable();
-        System.out.print("Enter Tenant Name (or 0 to cancel): ");
-        String name = scanner.nextLine().trim();
-        if (name.equals("0")) return;
 
-        System.out.print("Enter Contact Number: ");
-        String contact = scanner.nextLine().trim();
-        System.out.print("Enter Email Address: ");
-        String email = scanner.nextLine().trim();
-        System.out.print("Enter Business Name: ");
-        String business = scanner.nextLine().trim();
+    private void addTenantManual(User manager) {
+        System.out.println("\n----- ADD NEW TENANT RECORD (Type 0 or 'cancel' anytime to go back) -----");
+        userDao.displayTenantTable();
+        String name = readStringInput("Enter Tenant Name: ");
+        String contact = readStringInput("Enter Contact Number: ");
+        String email = readStringInput("Enter Email Address: ");
+        String business = readStringInput("Enter Business Name: ");
 
         userDao.addTenant(manager.id(), manager.username(), name, contact, email, business);
     }
@@ -96,64 +84,71 @@ public class ManagerMenu {
     private void viewProperties() {
         userDao.displayPropertyTable();
     }
-    private void viewTenant(){
+
+    private void viewTenant() {
         userDao.displayTenantTable();
     }
 
-    private void viewLeaseTable(){
+    private void viewLeaseTable() {
         userDao.displayLeasesTable();
     }
 
     private void createLeaseManual(User manager) {
         userDao.displayLeasesTable();
 
-        System.out.println("\n----- CREATE NEW LEASE CONTRACT -----");
-        int leaseId = readIntInput("Enter Lease ID (or 0 to cancel): ");
-        if (leaseId == 0) {
-            System.out.println(" -> Operation cancelled.");
-            return;
-        }
-
+        System.out.println("\n----- CREATE NEW LEASE CONTRACT (Type 0 or 'cancel' anytime to go back) -----");
+        int leaseId = readIntInput("Enter Lease ID: ");
         int tenantId = readIntInput("Enter Tenant ID: ");
         int propertyId = readIntInput("Enter Property ID: ");
-
-        System.out.print("Enter Start Date (YYYY-MM-DD): ");
-        String startDate = scanner.nextLine().trim();
-
-        System.out.print("Enter End Date (YYYY-MM-DD): ");
-        String endDate = scanner.nextLine().trim();
-
+        String startDate = readStringInput("Enter Start Date (YYYY-MM-DD): ");
+        String endDate = readStringInput("Enter End Date (YYYY-MM-DD): ");
         double rentalRate = readDoubleInput("Enter Monthly Rental Rate (PHP): ");
 
         userDao.createLease(manager.id(), manager.username(), leaseId, tenantId, propertyId, startDate, endDate, rentalRate);
     }
+
     private void deactivateLeaseManual(User manager) {
         userDao.displayLeasesTable();
         int leaseId = readIntInput("Enter Expired Lease ID to deactivate (or 0 to cancel): ");
-        if (leaseId == 0) return;
 
         userDao.deactivateLease(manager.id(), manager.username(), leaseId);
+    }
+
+    private String readStringInput(String prompt) {
+        System.out.print(prompt);
+        String input = scanner.nextLine().trim();
+        if (input.equals("0") || input.equalsIgnoreCase("CANCEL")) {
+            throw new OperationCancelledException();
+        }
+        return input;
     }
 
     private int readIntInput(String prompt) {
         while (true) {
             System.out.print(prompt);
             String input = scanner.nextLine().trim();
+            if (input.equals("0") || input.equalsIgnoreCase("CANCEL")) {
+                throw new OperationCancelledException();
+            }
             try {
                 return Integer.parseInt(input);
             } catch (NumberFormatException e) {
-                System.out.println(" -> [ERROR] Please enter a valid numeric integer.");
+                System.out.println(" -> [ERROR] Please enter a valid numeric integer (or 0 to cancel).");
             }
         }
     }
+
     private double readDoubleInput(String prompt) {
         while (true) {
             System.out.print(prompt);
             String input = scanner.nextLine().trim();
+            if (input.equals("0") || input.equalsIgnoreCase("CANCEL")) {
+                throw new OperationCancelledException();
+            }
             try {
                 return Double.parseDouble(input);
             } catch (NumberFormatException e) {
-                System.out.println(" -> [ERROR] Please enter a valid decimal number.");
+                System.out.println(" -> [ERROR] Please enter a valid decimal number (or 0 to cancel).");
             }
         }
     }
